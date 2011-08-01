@@ -1,0 +1,42 @@
+<project name="OrderHistoryServiceAdapter" basedir="." default="jar">
+  <taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
+    <classpath path="lib/jaxws-tools.jar" />
+  </taskdef>
+  <target name="clean">
+    <delete includeemptydirs="true" failonerror="false" >
+      <fileset dir="bin" includes="**/*" />
+      <fileset dir="generated" includes="**/*" />
+      <fileset dir="dist" />
+    </delete>
+  </target>
+
+  <target name="compile" depends="clean">
+    <wsimport 
+	wsdl="wsdl/OrdersHistoryService.wsdl"
+	destdir="bin"
+	sourcedestdir="generated"
+	xadditionalHeaders="true"
+	 />
+    <javac destdir="bin" >
+      <src path="test" />
+      <src path="src" />
+      <classpath path="lib/junit-4.9b3.jar" />
+    </javac>
+  </target>
+
+  <target name="jar" depends="compile">
+    <mkdir dir="dist" />
+    <jar destfile="dist/OrdersHistoryService.jar" basedir="bin" />
+  </target>
+
+  <target name="test" depends="jar" >
+    <junit printsummary="true" showoutput="true" >
+      <classpath>
+	<pathelement path="dist/OrdersHistoryService.jar" />
+	<pathelement path="lib/junit-4.9b3.jar" />
+      </classpath>
+      <formatter type="plain" />
+      <test name="com.eris.orderhistory.test.SessionTokenManagerTest" />
+    </junit>
+  </target>
+</project>

@@ -1,0 +1,1196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+	File: SharedTypes.xsd
+	Version 2.1 (21 Apr 2008, 18:00:00)
+	Copyright: Currenex Inc.
+	
+	This file contains shared XML Schema Type definitions for the data types used in 
+	SOAP messages in different CX webservices and in the authentication request.
+-->
+<xs:schema 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	xmlns:cx="http://currenex.com/webservice/shared" 
+	targetNamespace="http://currenex.com/webservice/shared" 
+	elementFormDefault="qualified">
+
+	<!-- AUTHENTICATION HEADER -->
+	
+	<xs:element name="session">
+		<xs:annotation>
+			<xs:documentation xml:lang="en">
+				This is the header to be included in the Header part of the SOAP Envelope 
+				containing the request to the web service. The SessionTicket must previously
+				be obtained by calling the Authentication service.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="userID" type="xs:string"/>
+				<xs:element name="sessionTicket" type="xs:string"/>
+			</xs:all>
+		</xs:complexType>
+	</xs:element>
+	
+	<!-- GENERAL ERRORS -->
+
+	<xs:element name="sessionError">
+		<xs:annotation>
+			<xs:documentation xml:lang="en">
+				Session error. This is returned as a fault when the session ticket authentication
+				failed. The error reason is specified by the error type enumeration. 
+				Note that if the soap message contains errors (ie. if the session header or any other
+				part is in invalid format or missing), the service may also throw a general fault 
+				without the SessionError element.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<!-- Element holding error message -->
+				<xs:element name="errorMessage" type="xs:string"/>
+				<!-- Element defining the error type -->
+				<xs:element name="errorType">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="BadSessionHeader"/>
+							<xs:enumeration value="InvalidSession"/>
+							<xs:enumeration value="SessionExpired"/>
+							<xs:enumeration value="PermissionDenied"/>
+							<xs:enumeration value="OtherError"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="requestError">
+		<xs:annotation>
+			<xs:documentation xml:lang="en">
+				Error in processing a web service request. This is returned as a fault when
+				processing the request failed. This message is given to be able to specifically
+				handle different problems on client side.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<!-- Element holding error message -->
+				<xs:element name="errorMessage" type="xs:string"/>
+				<!-- Element defining the error type -->
+				<xs:element name="errorType">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="InvalidRequest"/>
+							<xs:enumeration value="InternalServerProblem"/>
+							<xs:enumeration value="RequestedDataNotFound"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<!-- ==================== AUTHENTICATION SERVICE ============================ -->
+	
+	<xs:element name="loginRequest">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="userID"    type="xs:string" />
+				<xs:element name="password"  type="xs:string" />
+				<xs:element name="oneTimePassword" minOccurs="0" type="xs:string" />
+				<xs:element name="loginType" minOccurs="0" default="GetOrCreateSession">
+					<xs:annotation>
+						<xs:documentation>
+							Type of login required. 
+							  - GetSession gets an existing session (from FIX or FX client). Fails if no session exists.
+							  - CreateSession creates a session that can only be used within the webservice.
+							  - GetOrCreateSession gets the current session if existing, or creates if not.
+						</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="GetSession"/>
+							<xs:enumeration value="CreateSession"/>
+							<xs:enumeration value="GetOrCreateSession"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+			</xs:all>
+		</xs:complexType>
+	</xs:element>
+		
+	<xs:element name="loginResponse">
+		<xs:annotation>
+			<xs:documentation xml:lang="en">
+				Authentication response element for successful authentication. Contains the 
+				username as provided in the authentication request, the SessionTicket valid for 
+				the current session, and possibly an Expire time. Absence of the expire field 
+				means that the session doesn't expire automatically.
+				If the authentication failed, the service responds with a fault specifying the
+				error reason.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="userID"            type="xs:string" />
+				<xs:element name="sessionTicket"     type="xs:string" />
+				<xs:element name="webserviceSession" type="xs:boolean" >
+					<xs:annotation>
+						<xs:documentation>
+							Returns true if this is a webservice only session (created in webservice).
+							Client should handle session accordingly and log out if session is not needed anymore.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="expires"           type="xs:dateTime" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>
+							If this field is not specified, the session does not expire on the server.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="authError">
+		<xs:annotation>
+			<xs:documentation xml:lang="en">
+				Authentication Error element. This is returned as a fault when the authentication 
+				service has failed. The error reason is specified by exactly one of the choice 
+				elements. If any part of the request is in invalid format, the service may also 
+				throw a general fault without the AuthError element.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<!-- Element holding error message -->
+				<xs:element name="errorMessage" type="xs:string"/>
+				<!-- Element defining the error type -->
+				<xs:element name="errorType">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="BadUserOrPassword"/>
+							<xs:enumeration value="UserNotActive"/>
+							<xs:enumeration value="UserLockedOut"/>
+							<xs:enumeration value="PasswordNotSet"/>
+							<xs:enumeration value="PasswordExpired"/>
+							<xs:enumeration value="NoActiveSession"/>
+                            <xs:enumeration value="NotAuthorized"/>
+                            <xs:enumeration value="OtherError"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="changePasswordRequest">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="userID" type="xs:string"/>
+				<xs:element name="oldPassword" type="xs:string"/>
+				<xs:element name="newPassword" type="xs:string"/>
+				<xs:element name="oneTimePassword" minOccurs="0" type="xs:string" />
+			</xs:all>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="changePasswordResponse">
+		<xs:complexType>
+			<xs:sequence>
+				<!-- Element holding confirm message -->
+				<xs:element name="confirmPasswordChanged" type="xs:string"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="logoutRequest">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="userID" type="xs:string"/>
+			</xs:all>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="logoutResponse" type="xs:string"/>
+	
+	<xs:element name="changePasswordError">
+		<xs:complexType>
+			<xs:sequence>
+				<!-- Element holding error message -->
+				<xs:element name="errorMessage" type="xs:string"/>
+				<!-- Element defining reject reason-->
+				<xs:element name="rejectReason">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="BadUserOrPassword"/>
+							<xs:enumeration value="UserAuthenticationFailed"/>
+							<xs:enumeration value="NewPasswordIsOldPassword"/>
+							<xs:enumeration value="NewPasswordEmpty"/>
+							<xs:enumeration value="NewPasswordInvalid"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<!--      Test Request      -->
+	
+	<xs:element name="testRequest">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="testMessage"  type="xs:string" />
+				<xs:element name="checkSession" type="xs:boolean" default="false" />
+				<xs:element name="returnError"  type="xs:boolean" default="false" minOccurs="0"/>
+			</xs:all>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="testResponse">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="testSuccess">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="testMessage" type="xs:string"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="serviceVersion" type="xs:string" minOccurs="0"/>
+				<xs:element name="serviceBranch"  type="xs:string" minOccurs="0"/>
+				<xs:element name="classVersion"   type="xs:string" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="testError">
+		<xs:complexType>
+			<xs:sequence>
+				<!-- Element holding error message -->
+				<xs:element name="errorMessage" type="xs:string"/>
+				<!-- Element defining the error type -->
+				<xs:element name="errorType">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="InvalidPartyID"/>
+							<xs:enumeration value="PartyIDPermissionDenied"/>
+							<xs:enumeration value="OtherError"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+		
+	<!-- GENERAL TYPE DEFINITIONS -->
+	
+	<xs:simpleType name="Currency">
+		<xs:restriction base="xs:string">
+			<xs:length value="3"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:complexType name="CurrencyPair">
+		<xs:sequence>
+			<xs:element name="base" type="cx:Currency" />
+			<xs:element name="term" type="cx:Currency" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="DatePeriod">
+		<xs:all>
+			<xs:element name="begin" type="xs:date" minOccurs="0" />
+			<xs:element name="end"   type="xs:date" minOccurs="0" />
+		</xs:all>
+	</xs:complexType>
+
+	<xs:complexType name="DateTimePeriod">
+		<xs:all>
+			<xs:element name="begin" type="xs:dateTime" />
+			<xs:element name="end"   type="xs:dateTime" />
+		</xs:all>
+	</xs:complexType>
+	
+	<xs:complexType name="EmptyElement">
+		<xs:sequence/>
+	</xs:complexType>
+	
+	<xs:simpleType name="BuySell">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="BUY"/>
+			<xs:enumeration value="SELL"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+    <xs:simpleType name="TradingMode">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="NET|SUPER-HEDGE|VNET"/>
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <xs:simpleType name="TradeType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="SP"/>
+			<xs:enumeration value="OR"/>
+		    <xs:enumeration value="SW"/>
+			<xs:enumeration value="LD"/>
+			<xs:enumeration value="TREAS"/>
+		</xs:restriction>
+	</xs:simpleType>
+    
+    <xs:simpleType name="CcyType">
+		<xs:restriction base="xs:string">
+			<xs:length value="3" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:complexType name="Instrument" abstract="true">
+		<xs:annotation>
+			<xs:documentation>
+				The base type for instruments
+			</xs:documentation>
+		</xs:annotation>
+	</xs:complexType>
+
+	<xs:complexType name="FxInstrument">
+		<xs:complexContent>
+			<xs:extension base="cx:Instrument">
+				<xs:sequence>
+					<xs:element name="base" 						type="cx:CcyType" 				nillable="false" />
+					<xs:element name="term" 						type="cx:CcyType" 				nillable="false" />
+					<xs:element name="tenor" 						type="cx:Tenor" 				nillable="false" />
+					<xs:element name="farTenor" 					type="cx:Tenor" 				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="TreasInstrument">
+		<xs:complexContent>
+			<xs:extension base="cx:Instrument">
+				<xs:sequence>
+					<xs:element name="treasState" 					type="cx:TreasuryState"			nillable="false" />
+					<xs:element name="tenor" 						type="cx:TreasuryTenorCode"		nillable="false" />
+					<xs:element name="treasAnounc" 					type="cx:TreasAnnounc"			nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="TreasInstrDef">
+		<xs:sequence>
+			<xs:element name="tenor" 								type="cx:TreasuryTenorCode"		nillable="false" />
+			<xs:element name="cusip" 								type="xs:string" 				nillable="false" />
+			<xs:element name="datedDate" 							type="xs:date" 					nillable="true" />
+			<xs:element name="maturityDate" 						type="xs:date" 					nillable="true" />
+			<xs:element name="intrstPayDate1" 						type="xs:date" 					nillable="true" />
+			<xs:element name="intrstPayDate2" 						type="xs:date" 					nillable="true" />
+			<xs:element name="cupon" 								type="xs:decimal" 				nillable="true" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="TreasAnnounc">
+		<xs:sequence>
+			<xs:element name="definition" 							type="cx:TreasInstrDef"			nillable="false" />
+			<xs:element name="overrideTenor" 						type="cx:TreasuryTenorCode"		nillable="true" />
+			<xs:element name="nonStdTenorDesc" 						type="xs:string"				nillable="true" />
+			<xs:element name="announcDate" 							type="xs:date" 					nillable="false" />
+			<xs:element name="auctDate" 							type="xs:date" 					nillable="false" />
+			<xs:element name="issueDate" 							type="xs:date" 					nillable="false" />
+			<xs:element name="reopen" 								type="xs:boolean" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="TreasuryRate">
+		<xs:sequence>
+			<xs:element name="rateType">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="Price"/>
+                        <xs:enumeration value="Discount"/>
+						<xs:enumeration value="Yield"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="rate" type="xs:decimal"/>
+		</xs:sequence>
+	</xs:complexType>
+
+    <xs:simpleType name="Tenor">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="CD"/>
+			<xs:enumeration value="SD"/>
+			<xs:enumeration value="TOD"/>
+			<xs:enumeration value="ND"/>
+			<xs:enumeration value="TOM"/>
+			<xs:enumeration value="SP"/>
+			<xs:enumeration value="SN"/>
+			<xs:enumeration value="1W"/>
+			<xs:enumeration value="2W"/>
+			<xs:enumeration value="3W"/>
+			<xs:enumeration value="1M"/>
+			<xs:enumeration value="2M"/>
+			<xs:enumeration value="3M"/>
+			<xs:enumeration value="4M"/>
+			<xs:enumeration value="5M"/>
+			<xs:enumeration value="6M"/>
+			<xs:enumeration value="7M"/>
+			<xs:enumeration value="8M"/>
+			<xs:enumeration value="9M"/>
+			<xs:enumeration value="10M"/>
+			<xs:enumeration value="11M"/>
+			<xs:enumeration value="1Y"/>
+			<xs:enumeration value="2Y"/>
+			<xs:enumeration value="3Y"/>
+			<xs:enumeration value="4Y"/>
+			<xs:enumeration value="5Y"/>
+			<xs:enumeration value="6Y"/>
+			<xs:enumeration value="7Y"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="IrsTenor">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="1Y"/>
+			<xs:enumeration value="2Y"/>
+			<xs:enumeration value="3Y"/>
+			<xs:enumeration value="4Y"/>
+			<xs:enumeration value="5Y"/>
+			<xs:enumeration value="6Y"/>
+			<xs:enumeration value="7Y"/>
+			<xs:enumeration value="8Y"/>
+			<xs:enumeration value="9Y"/>
+			<xs:enumeration value="10Y"/>
+			<xs:enumeration value="11Y"/>
+			<xs:enumeration value="12Y"/>
+			<xs:enumeration value="13Y"/>
+			<xs:enumeration value="14Y"/>
+			<xs:enumeration value="15Y"/>
+			<xs:enumeration value="16Y"/>
+			<xs:enumeration value="17Y"/>
+			<xs:enumeration value="18Y"/>
+			<xs:enumeration value="19Y"/>
+			<xs:enumeration value="20Y"/>
+			<xs:enumeration value="21Y"/>
+			<xs:enumeration value="22Y"/>
+			<xs:enumeration value="23Y"/>
+			<xs:enumeration value="24Y"/>
+			<xs:enumeration value="25Y"/>
+			<xs:enumeration value="26Y"/>
+			<xs:enumeration value="27Y"/>
+			<xs:enumeration value="28Y"/>
+			<xs:enumeration value="29Y"/>
+			<xs:enumeration value="30Y"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="IrsCme">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="SA"/>
+			<xs:enumeration value="7I"/>
+			<xs:enumeration value="SR"/>
+			<xs:enumeration value="I3"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="IrsPrice">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="FIXED_RATE"/>
+			<xs:enumeration value="NPV"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:complexType name="IrsInstrDef">
+		<xs:sequence>
+		    <xs:element name="cme" 								    type="xs:boolean"               nillable="true"/>
+			<xs:element name="zcodeDef" 						    type="cx:ZCodeDef" 				nillable="true" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="ZCodeDef">
+		<xs:sequence>
+		    <xs:element name="zcode" 						        type="xs:string" 				nillable="true" />
+		    <xs:element name="maturityDate" 						type="xs:date" 					nillable="false"/>
+			<xs:element name="settlementDate" 						type="xs:date" 					nillable="false"/>
+			<xs:element name="cashFlowAlignDate"                    type="xs:date" 					nillable="false" />
+		    <xs:element name="fixRate" 								type="xs:decimal"               nillable="false" />
+		    <xs:element name="fixFirstPayDate" 					    type="xs:date" 		            nillable="true" />
+		    <xs:element name="fltFirstPayDate" 					    type="xs:date" 		            nillable="true" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:simpleType name="DayCountConvention">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="ACT/360"/>
+			<xs:enumeration value="ACT/365"/>
+			<xs:enumeration value="30/360"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="TreasuryState">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="WI"/>
+			<xs:enumeration value="OTR"/>
+			<xs:enumeration value="OLD"/>
+			<xs:enumeration value="OLD1"/>
+			<xs:enumeration value="OLD2"/>
+			<xs:enumeration value="OLD3"/>
+			<xs:enumeration value="OLD4"/>
+			<xs:enumeration value="OLD5"/>
+			<xs:enumeration value="OLD6"/>
+			<xs:enumeration value="OLD7"/>
+			<xs:enumeration value="OLD8"/>
+			<xs:enumeration value="OLD9"/>
+			<xs:enumeration value="OLD10"/>
+			<xs:enumeration value="OLD11"/>
+			<xs:enumeration value="OLD12"/>
+			<xs:enumeration value="OLD13"/>
+			<xs:enumeration value="OLD14"/>
+			<xs:enumeration value="OLD15"/>
+			<xs:enumeration value="OLD16"/>
+			<xs:enumeration value="OLD17"/>
+			<xs:enumeration value="OLD18"/>
+			<xs:enumeration value="OLD19"/>
+			<xs:enumeration value="OLD20"/>
+			<xs:enumeration value="OLD21"/>
+			<xs:enumeration value="OLD22"/>
+			<xs:enumeration value="OLD23"/>
+			<xs:enumeration value="OLD24"/>
+			<xs:enumeration value="OLD25"/>
+			<xs:enumeration value="OLD26"/>
+			<xs:enumeration value="OLD27"/>
+			<xs:enumeration value="OLD28"/>
+			<xs:enumeration value="OLD29"/>
+			<xs:enumeration value="OLD30"/>
+			<xs:enumeration value="OLD31"/>
+			<xs:enumeration value="OLD32"/>
+			<xs:enumeration value="OLD33"/>
+			<xs:enumeration value="OLD34"/>
+			<xs:enumeration value="OLD35"/>
+			<xs:enumeration value="OLD36"/>
+			<xs:enumeration value="OLD37"/>
+			<xs:enumeration value="OLD38"/>
+			<xs:enumeration value="OLD39"/>
+			<xs:enumeration value="OLD40"/>
+			<xs:enumeration value="OLD41"/>
+			<xs:enumeration value="OLD42"/>
+			<xs:enumeration value="OLD43"/>
+			<xs:enumeration value="OLD44"/>
+			<xs:enumeration value="OLD45"/>
+			<xs:enumeration value="OLD46"/>
+			<xs:enumeration value="OLD47"/>
+			<xs:enumeration value="OLD48"/>
+			<xs:enumeration value="OLD49"/>
+			<xs:enumeration value="OLD50"/>
+			<xs:enumeration value="OLD51"/>
+			<xs:enumeration value="OLD52"/>
+			<xs:enumeration value="OLD53"/>
+			<xs:enumeration value="OLD54"/>
+			<xs:enumeration value="OLD55"/>
+			<xs:enumeration value="OLD56"/>
+			<xs:enumeration value="OLD57"/>
+			<xs:enumeration value="OLD58"/>
+			<xs:enumeration value="OLD59"/>
+			<xs:enumeration value="OLD60"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="TreasuryTenorCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="1M"/>
+			<xs:enumeration value="3M"/>
+			<xs:enumeration value="6M"/>
+			<xs:enumeration value="1Y"/>
+			<xs:enumeration value="2Y"/>
+			<xs:enumeration value="3Y"/>
+			<xs:enumeration value="5Y"/>
+			<xs:enumeration value="7Y"/>
+			<xs:enumeration value="10Y"/>
+			<xs:enumeration value="30Y"/>
+			<xs:enumeration value="CMB"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:complexType name="MarginRate">
+		<xs:sequence>
+			<xs:element name="base" type="cx:Currency"/>
+			<xs:element name="term" type="cx:Currency"/>
+			<xs:element name="rate" type="xs:decimal"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="Ratio">
+		<xs:sequence>
+			<xs:element name="home"   type="xs:decimal"/>
+			<xs:element name="contra" type="xs:decimal"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="UserAccount">
+		<xs:all>
+			<xs:element name="userID"    type="xs:string"/>
+			<xs:element name="accountID" type="xs:string" minOccurs="0"/>
+		</xs:all>
+	</xs:complexType>
+
+	<xs:simpleType name="PendingAction">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="NONE"/>
+			<xs:enumeration value="ALLOC_PENDING"/>
+			<xs:enumeration value="AMEND_PENDING"/>
+			<xs:enumeration value="AMEND_REQUESTED"/>
+			<xs:enumeration value="AMEND_REJECTED"/>
+			<xs:enumeration value="CANCEL_REQUESTED"/>
+			<xs:enumeration value="CANCEL_REJECTED"/>
+			<xs:enumeration value="SPTFWD_PENDING"/>
+			<xs:enumeration value="SPTFWD_REQUESTED"/>
+			<xs:enumeration value="SPTFWD_REJECTED"/>
+			<xs:enumeration value="SPTFWD_PRICED"/>
+			<xs:enumeration value="SPTFWD_REPRICE"/>
+			<xs:enumeration value="SPTFWD_REPRICED"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="PaymentType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="FX"/>
+			<xs:enumeration value="LOANDEPOSIT"/>
+			<xs:enumeration value="INTEREST"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:complexType name="BalanceInformation">
+		<xs:sequence>
+			<xs:element name="accountID"          type="xs:string"   />
+			<xs:element name="partyID"            type="xs:string"   />
+			<xs:element name="homeCurrency"       type="cx:Currency" />
+			<xs:element name="accountStatus"      type="cx:MarginAccountStatus" />
+			<xs:element name="openingCashDeposit" type="xs:decimal"  />
+			<xs:element name="accountBalance"     type="xs:decimal"  />
+			<xs:element name="accountEquityRatio" type="xs:decimal"  />
+			<!-- list of Account position elements -->
+			<xs:element name="position"           type="cx:Position" minOccurs="0" maxOccurs="unbounded" />
+		</xs:sequence>
+	</xs:complexType>
+
+    <xs:complexType name="Position">
+		<xs:sequence>
+            <xs:element name="positionId"         type="xs:string"  minOccurs="0" maxOccurs="1"/>
+            <xs:element name="baseCurrency"       type="cx:Currency" />
+			<xs:element name="termCurrency"       type="cx:Currency" />
+			<xs:element name="positionSize"       type="xs:decimal" />
+			<xs:element name="unrealizedPL"       type="xs:decimal" />
+            <!-- Allow these values to be excluded if returning a simple version of the position -->
+            <xs:element name="realizedPL"         type="xs:decimal" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="realizedPLHome"     type="xs:decimal" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="marginRequirement"  type="xs:decimal" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="marginRate"         type="xs:decimal" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="averageRate"        type="xs:decimal" />
+            <xs:element name="baseTermsRate"      type="xs:decimal" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="termsHomeRate"      type="xs:decimal" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="baseHomeRate"      type="xs:decimal" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+	</xs:complexType>
+
+    <xs:simpleType name="MarginAccountStatus">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Enabled"       />
+			<xs:enumeration value="LiquidateOnly" />
+			<xs:enumeration value="Disabled"      />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:complexType name="JournalEntry">
+		<xs:sequence>
+			<xs:element name="type"           type="cx:JournalEntryType" />
+			<xs:element name="effectiveDate"  type="xs:date"     />
+			<xs:element name="amount"         type="xs:decimal"  />
+			<xs:element name="rate"           type="xs:decimal"  />
+			<xs:element name="currency"       type="cx:Currency" />
+			<xs:element name="comment"        type="xs:string"   />
+			<xs:element name="tradeId"        type="xs:string" minOccurs="0" />
+			<xs:element name="timestamp"      type="xs:dateTime" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:simpleType name="JournalEntryType">
+		<xs:restriction base="xs:string">
+            <xs:enumeration value="Adjustment"/>
+			<xs:enumeration value="Interest"/>
+			<xs:enumeration value="Roll"/>
+			<xs:enumeration value="Profit And Loss"/>
+			<xs:enumeration value="Commission"/>
+			<xs:enumeration value="Collateral"/>
+			<xs:enumeration value="MM Commission"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="ConversionType">
+		<xs:restriction base="xs:string">
+   			<xs:enumeration value="CLOSE_VWAP"/>
+			<xs:enumeration value="OPEN_VWAP"/>
+			<xs:enumeration value="ACTIVE_VWAP"/>
+			<xs:enumeration value="DB_RATE"/>
+			<xs:enumeration value="MANUAL"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:complexType name="AccountEquityReport">
+		<xs:sequence>
+			<xs:element name="accountID" type="xs:string"   />
+            <xs:element name="returnPeriod" type="cx:DatePeriod" />
+            <xs:element name="runTime" type="xs:long"  />
+            <xs:element name="beginningBalance" type="xs:decimal"  />
+            <xs:element name="beginningEquity" type="xs:decimal"  />
+            <xs:element name="beginningMarginRequired" type="xs:decimal"  />
+            <xs:element name="endingBalance" type="xs:decimal"  />
+            <xs:element name="endingEquity" type="xs:decimal"  />
+            <xs:element name="endingMarginRequired" type="xs:decimal"  />
+            <xs:element name="endingFreeCash" type="xs:decimal"  />
+            <xs:element name="totalDeposits" type="xs:decimal"  />
+            <xs:element name="totalWithdrawals" type="xs:decimal"  />
+            <xs:element name="totalRealizedPL" type="xs:decimal"  />
+            <xs:element name="totalUnrealizedPL" type="xs:decimal"  />
+            <xs:element name="totalMarketToMarketPL" type="xs:decimal"  />
+            <xs:element name="totalCommission" type="xs:decimal"  />
+            <xs:element name="totalRollInterest" type="xs:decimal"  />
+            <xs:element name="totalCashInterest" type="xs:decimal"  />
+            <!-- Making currency optional to not enforce new stub generation at client side -->
+            <xs:element name="currency" type="cx:Currency" minOccurs="0" />
+			<!-- list of Account position elements -->
+			<xs:element name="position" type="cx:Position" minOccurs="0" maxOccurs="unbounded" />
+		</xs:sequence>
+	</xs:complexType>
+
+    <xs:simpleType name="CommissionType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="HOUSE_COMMISSION"/>
+			<xs:enumeration value="MM_COMMISSION"/>
+		</xs:restriction>
+	</xs:simpleType>    
+	
+		<!-- Draft and associated types. -->
+	<xs:complexType name="DraftType">
+		<xs:sequence>
+			<xs:element name="id" type="xs:string" minOccurs="0"/>
+			<xs:element name="submittingUserId" type="xs:string"/>
+			<xs:element name="subFundId" type="xs:string"/>
+			<xs:element name="instrumentId" type="xs:string" />
+			<xs:element name="isBaseSpecifiedCurrency" type="xs:boolean" />
+			<xs:element name="buySell" type="cx:BuySell" minOccurs="0"/>
+			<xs:element name="specifiedAmount" type="xs:decimal" minOccurs="0"/>
+			<xs:element name="cdValueDate" type="xs:date" minOccurs="0"/>
+			<xs:element name="pendingAction" type="cx:PendingAction"/>
+			<xs:element name="isDeliverable" type="xs:boolean"/>
+            <xs:element name="submittingPartyTradeId" type="xs:string" minOccurs="0"/>
+            <xs:element name="origTakerTag" type="xs:string" minOccurs="0"/>
+            <xs:element name="additionalTerms" type="xs:string" minOccurs="0"/>
+            <xs:element name="userDefinedField" type="cx:UserDefinedFieldType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="areUDFsComplete" type="xs:boolean"/>
+			<xs:element name="isTemplate" type="xs:boolean"/>
+			<xs:element name="templateName" type="xs:string" minOccurs="0"/>
+			<xs:element name="isAvailable" type="xs:boolean"/>
+			<xs:element name="draftAllocations" type="cx:DraftAllocationType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="bankListNames" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element ref="cx:APricingAction"/>
+			<xs:element name="stagedOrderKey" type="xs:long" minOccurs="0"/>
+			<xs:element name="cancelOnDisconnect" type="xs:boolean"/>
+			<xs:element name="isInternal" type="xs:boolean"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="UserDefinedFieldType">
+		<xs:all>
+			<xs:element name="name" type="xs:string"/>
+			<xs:element name="value" type="xs:string" minOccurs="0"/>
+			<xs:element name="displayValue" type="xs:string" minOccurs="0"/>
+		</xs:all>
+	</xs:complexType>
+	
+	<xs:complexType name="DraftAllocationType">
+		<xs:sequence>
+			<xs:element name="subFundId" type="xs:string"/>
+			<xs:element name="amount" type="xs:decimal"/>
+			<xs:element name="buySell" type="cx:BuySell"/>
+			<xs:element name="takerCategory" type="xs:string" minOccurs="0"/>
+			<xs:element name="takerAllocationId" type="xs:string" minOccurs="0"/>
+			<xs:element name="allocationId" type="xs:string" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:simpleType name="EspOrderStatusType">
+		<xs:restriction base="xs:string">
+				<xs:enumeration value="INACTIVE"/>
+				<xs:enumeration value="ACTIVE"/>
+				<xs:enumeration value="CANCELLED"/>
+				<xs:enumeration value="IOC_CANCELLED"/>
+				<xs:enumeration value="FILLED"/>
+				<xs:enumeration value="EXPIRED"/>
+				<xs:enumeration value="BELOW_MIN"/>
+				<xs:enumeration value="KILLED"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:complexType name="ExpirationType">
+		<xs:sequence>
+			<xs:element name="expirationType" type="cx:ExpirationEnum"/>
+			<xs:element name="timeToLiveSeconds" type="xs:integer"/>
+			<xs:element name="expirationDate" type="xs:dateTime" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:simpleType name="ExpirationEnum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="GOOD_TO_CANCEL"/>
+			<xs:enumeration value="GOOD_TO_TIME"/>
+			<xs:enumeration value="GOOD_FOR_SECONDS"/>
+			<xs:enumeration value="IMMEDIATE_OR_CANCEL"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="PriceSideType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="BID"/>
+			<xs:enumeration value="OFFER"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:element name="APricingAction" type="cx:APricingActionType" abstract="true"/>
+	<xs:complexType name="APricingActionType">
+		<xs:sequence>
+			<xs:element name="greenKey" type="xs:long" minOccurs="0"/>
+			<xs:element name="isActive" type="xs:boolean"/>
+			<xs:element name="routingUserId" type="xs:string" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="RFQAction" substitutionGroup="cx:APricingAction" type="cx:RFQActionType"/>
+	<xs:complexType name="RFQActionType">
+		<xs:complexContent>
+			<xs:extension base="cx:APricingActionType">
+				<xs:sequence>
+					<xs:element name="referenceRate" type="xs:double" minOccurs="0"/>
+					<xs:element name="comment" type="xs:string" minOccurs="0"/>
+					<xs:element name="isFastQuote" type="xs:boolean"/>
+					<xs:element name="isTwoWayQuote" type="xs:boolean"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="RFEAction" substitutionGroup="cx:APricingAction" type="cx:RFEActionType"/>
+	<xs:complexType name="RFEActionType">
+		<xs:complexContent>
+			<xs:extension base="cx:APricingActionType">
+				<!-- No additional fields. -->
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="AEspOrder" substitutionGroup="cx:APricingAction" type="cx:AEspOrderType" abstract="true"/>
+	<xs:complexType name="AEspOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:APricingActionType">
+				<xs:sequence>
+					<xs:element name="status" type="cx:EspOrderStatusType"/>
+					<xs:element name="availablAmount" type="xs:decimal"/>
+					<xs:element name="minAmount" type="xs:decimal"/>
+					<xs:element name="maxAmount" type="xs:decimal"/>
+					<xs:element name="expiration" type="cx:ExpirationType"/>
+					<xs:element name="cancelDate" type="xs:date" minOccurs="0"/>
+					<xs:element name="cancelUserId" type="xs:string" minOccurs="0"/>
+					<xs:element name="submitDate" type="xs:date" minOccurs="0"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="AEspLimitOrder" substitutionGroup="cx:AEspOrder" type="cx:AEspLimitOrderType"/>
+	<xs:complexType name="AEspLimitOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AEspOrderType">
+				<xs:sequence>
+					<xs:element name="limitRate" type="xs:decimal"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="EspLimitOrder" substitutionGroup="cx:AEspLimitOrder" type="cx:EspLimitOrderType"/>
+	<xs:complexType name="EspLimitOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AEspLimitOrderType">
+				<!-- No additional fields. -->
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="EspIcebergOrder" substitutionGroup="cx:AEspLimitOrder" type="cx:EspIcebergOrderType"/>
+	<xs:complexType name="EspIcebergOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AEspLimitOrderType">
+				<xs:sequence>
+					<xs:element name="showAmount" type="xs:decimal"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="EspMarketOrder" substitutionGroup="cx:AEspOrder" type="cx:EspMarketOrderType"/>
+	<xs:complexType name="EspMarketOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AEspOrderType">
+				<!-- No additional fields. -->
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="AEspStopOrder" substitutionGroup="cx:AEspOrder" type="cx:AEspStopOrderType" abstract="true"/>
+	<xs:complexType name="AEspStopOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AEspOrderType">
+				<xs:sequence>
+					<xs:element name="triggeredRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="triggeredDate" type="xs:date" minOccurs="0"/>
+					<xs:element name="stopRate" type="xs:decimal"/>
+					<xs:element name="stopSide" type="cx:PriceSideType"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="EspStopLimitOrder" substitutionGroup="cx:AEspStopOrder" type="cx:EspStopLimitOrderType"/>
+	<xs:complexType name="EspStopLimitOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AEspStopOrderType">
+				<xs:sequence>
+					<xs:element name="limitRate" type="xs:decimal" minOccurs="0"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="EspStopLossOrder" substitutionGroup="cx:AEspStopOrder" type="cx:EspStopLossOrderType"/>
+	<xs:complexType name="EspStopLossOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AEspStopOrderType">
+					<!-- No additional fields. -->
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:simpleType name="CoCancelType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="CREDIT"/>
+			<xs:enumeration value="EXPIRE"/>
+			<xs:enumeration value="USER"/>
+			<xs:enumeration value="USER_IF"/>
+			<xs:enumeration value="SYSTEM"/>
+			<xs:enumeration value="BELOW_MIN"/>
+			<xs:enumeration value="MARGIN_SELLOUT"/>
+			<xs:enumeration value="DISCONNECT"/>
+			<xs:enumeration value="INTERNAL"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="CoStatusType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="ACTIVE"/>
+			<xs:enumeration value="DONE"/>
+			<xs:enumeration value="CANCELLED"/>
+			<xs:enumeration value="PARTIAL_CANCELLED"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:element name="AComplexOrder" type="cx:AComplexOrderType" abstract="true"/>
+	<xs:complexType name="AComplexOrderType">
+		<xs:sequence>
+		    <xs:element name="orderKey" type="xs:long" minOccurs="0"/>
+			<xs:element name="ownerUserId" type="xs:string"/>
+			<xs:element name="subFundId" type="xs:string"/>
+			<xs:element name="routingUserId" type="xs:string" minOccurs="0"/>
+			<xs:element name="submitDate" type="xs:date" minOccurs="0"/>
+			<xs:element name="partyOrderId" type="xs:string" minOccurs="0"/>
+			<xs:element name="prevPartyOrderId" type="xs:string" minOccurs="0"/>
+			<xs:element name="isBaseSpecifiedCurrency" type="xs:boolean"/>
+			<xs:element name="instrumentId" type="xs:string"/>
+			<xs:element name="specifiedAmount" type="xs:decimal"/>
+			<xs:element name="minAmount" type="xs:decimal"/>
+			<xs:element name="maxAmount" type="xs:decimal"/>
+			<xs:element name="expiration" type="cx:ExpirationType"/>
+			<xs:element name="status" type="cx:CoStatusType"/>
+			<xs:element name="cancelReason" type="cx:CoCancelType" minOccurs="0"/>
+			<xs:element name="cancelUserId" type="xs:string" minOccurs="0"/>
+			<xs:element name="cancelDate" type="xs:date" minOccurs="0"/>
+			<xs:element name="startTime" type="xs:date" minOccurs="0"/>
+			<xs:element name="bankListNames" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="isCancelOnDisconnect" type="xs:boolean"/>
+			<xs:element name="stagedOrderKey" type="xs:long" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="StopOrder" substitutionGroup="cx:AComplexOrder" type="cx:StopOrderType"/>
+	<xs:complexType name="StopOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AComplexOrderType">
+				<xs:sequence>
+					<xs:element name="triggeredRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="triggeredDate" type="xs:date" minOccurs="0"/>
+					<xs:element name="stopRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="limitRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="buySell" type="cx:BuySell"/>
+					<xs:element name="triggerSide" type="cx:PriceSideType"/>
+					<xs:element name="additionalTerms" type="xs:string" minOccurs="0"/>
+					<xs:element name="trailBy" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="maxSlippage" type="xs:int" minOccurs="0"/>
+					<xs:element name="isInternal" type="xs:boolean"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="SlicedOrder" substitutionGroup="cx:AComplexOrder" type="cx:SlicedOrderType"/>
+	<xs:complexType name="SlicedOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AComplexOrderType">
+				<xs:sequence>
+					<xs:element name="buySell" type="cx:BuySell"/>
+					<xs:element name="numSlices" type="xs:int"/>
+					<xs:element name="isInternal" type="xs:boolean"/>
+					<xs:element name="avgIntervalLen" type="xs:long" minOccurs="0"/>
+					<xs:element name="intervalOffset" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="sliceAmount" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="limitRate" type="xs:decimal"/>
+					<xs:element name="maxTobPct" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="filledAmount" type="xs:decimal"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="OcoOrder" substitutionGroup="cx:AComplexOrder" type="cx:OcoOrderType"/>
+	<xs:complexType name="OcoOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AComplexOrderType">
+				<xs:sequence>
+					<xs:element name="buySell" type="cx:BuySell"/>
+					<xs:element name="leg1LimitRate" type="xs:decimal"/>
+					<xs:element name="leg2OrderType" type="cx:EspOrderType"/>
+					<xs:element name="leg2LimitRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="leg2StopRate" type="xs:decimal"/>
+					<xs:element name="leg2StopSide" type="cx:PriceSideType"/>
+					<xs:element name="leg2BuySell" type="cx:BuySell" minOccurs="0"/>
+					<xs:element name="isInternal" type="xs:boolean"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="PeggedOrder" substitutionGroup="cx:AComplexOrder" type="cx:PeggedOrderType"/>
+	<xs:complexType name="PeggedOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AComplexOrderType">
+				<xs:sequence>
+					<xs:element name="showAmount" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="pegType" type="cx:PegType"/>
+					<xs:element name="buySell" type="cx:BuySell"/>
+					<xs:element name="offsetPips" type="xs:int"/>
+					<xs:element name="discretionPips" type="xs:int"/>
+					<xs:element name="protectionPct" type="xs:decimal"/>
+					<xs:element name="isFallBack" type="xs:boolean"/>
+					<xs:element name="worstRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="filledAmount" type="xs:decimal"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="MultiMarketOrder" substitutionGroup="cx:AComplexOrder" type="cx:MultiMarketOrderType"/>
+	<xs:complexType name="MultiMarketOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AComplexOrderType">
+				<xs:sequence>
+					<xs:element name="buySell" type="cx:BuySell"/>
+					<xs:element name="limitRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="isSubmitToCx" type="xs:boolean"/>
+					<xs:element name="isInternal" type="xs:boolean"/>
+					<xs:element name="filledAmount" type="xs:decimal"/>
+					<xs:element name="makerPartyId" type="xs:string"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="AIfDoneOrder" substitutionGroup="cx:AComplexOrder" type="cx:AIfDoneOrderType" abstract="true"/>
+	<xs:complexType name="AIfDoneOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AComplexOrderType">
+				<xs:sequence>
+					<xs:element name="leg1BuySell" type="cx:BuySell"/>
+					<xs:element name="leg1OrderType" type="cx:EspOrderType"/>
+					<xs:element name="leg1LimitRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="leg1StopRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="leg1StopSide" type="cx:PriceSideType" minOccurs="0"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="IfDoneOcoOrder" substitutionGroup="cx:AIfDoneOrder" type="cx:IfDoneOcoOrderType"/>
+	<xs:complexType name="IfDoneOcoOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AIfDoneOrderType">
+				<xs:sequence>
+					<xs:element name="ocoBuySell" type="cx:BuySell"/>
+					<xs:element name="ocoLimitRate" type="xs:decimal"/>
+					<xs:element name="ocoLeg2OrderType" type="cx:EspOrderType"/>
+					<xs:element name="ocoLeg2LimitRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="ocoLeg2StopRate" type="xs:decimal"/>
+					<xs:element name="ocoLeg2StopSide" type="cx:PriceSideType"/>
+					<xs:element name="ocoLeg2BuySell" type="cx:BuySell"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:element name="IfDoneOrder" substitutionGroup="cx:AIfDoneOrder" type="cx:IfDoneOrderType"/>
+	<xs:complexType name="IfDoneOrderType">
+		<xs:complexContent>
+			<xs:extension base="cx:AIfDoneOrderType">
+				<xs:sequence>
+					<xs:element name="leg2BuySell" type="cx:BuySell"/>
+					<xs:element name="leg2LimitRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="leg2StopRate" type="xs:decimal" minOccurs="0"/>
+					<xs:element name="leg2OrderType" type="cx:EspOrderType"/>
+					<xs:element name="leg2StopSide" type="cx:PriceSideType" minOccurs="0"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:simpleType name="EspOrderType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="ICEBERG"/>
+			<xs:enumeration value="LIMIT"/>
+			<xs:enumeration value="MARKET"/>
+			<xs:enumeration value="STOP_LOSS"/>
+			<xs:enumeration value="STOP_LIMIT"/>
+			<xs:enumeration value="TRAILING_STOP"/>
+			<xs:enumeration value="IF_DONE"/>
+			<xs:enumeration value="IF_DONE_OCO"/>
+			<xs:enumeration value="MULTI_MARKET"/>
+			<xs:enumeration value="OCO"/>
+			<xs:enumeration value="PEGGED"/>
+			<xs:enumeration value="SLICED"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="PegType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="BID"/>
+			<xs:enumeration value="OFFER"/>
+			<xs:enumeration value="MID"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

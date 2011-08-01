@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+	File: OrdersHistoryService.wsdl
+	Version 2.0 (22 Mar 2010, 18:00:00)
+	Copyright: Currenex Inc.
+	
+	This file contains the definition of the Order History Service.
+	
+	The data types used in the SOAP messages are defined in an additional file
+	[OrdersHistoryService.xsd] that should be included with this file.
+-->
+<wsdl:definitions 
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+	xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" 
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:orderhistory="http://currenex.com/webservice/orderhistory" 
+	xmlns:tns="http://currenex.com/webservice/definitions" 
+	targetNamespace="http://currenex.com/webservice/definitions">
+	
+	<!-- ===== WSDL Import for shared messages ===== -->
+
+	<wsdl:import namespace="http://currenex.com/webservice/definitions" location="SharedMessages.wsdl"/>
+	
+	<!-- ===== XML Schema Import for types ===== -->
+	
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://currenex.com/webservice/orderhistory">
+			<xsd:include schemaLocation="OrdersHistoryService.xsd"/>
+		</xsd:schema>
+	</wsdl:types>
+
+
+	<!-- ===== WSDL Messages ===== -->
+	
+	<!-- Activity Report messeges -->
+	
+	<wsdl:message name="OrdersHistoryRequestMsg">
+		<wsdl:part name="OrdersHistoryRequest" element="orderhistory:ordersHistoryRequest"/>
+	</wsdl:message>
+	<wsdl:message name="OrdersHistoryResponseMsg">
+		<wsdl:part name="OrdersHistoryResponse" element="orderhistory:ordersHistoryResponse"/>
+	</wsdl:message>
+
+	<!-- ===== WSDL Port Types ===== -->
+	
+	<wsdl:portType name="OrdersHistoryPortType">
+
+		<!-- Order History operation -->
+		
+		<wsdl:operation name="OrdersHistory">
+			<wsdl:input message="tns:OrdersHistoryRequestMsg"/>
+			<wsdl:output message="tns:OrdersHistoryResponseMsg"/>
+			<wsdl:fault name="SessionError" message="tns:SessionErrorMsg"/>
+			<wsdl:fault name="RequestError" message="tns:RequestErrorMsg"/>
+		</wsdl:operation>
+
+	</wsdl:portType>	
+	
+	<!-- ===== WSDL SOAP Bindings ===== -->
+	<wsdl:binding name="OrdersHistoryBinding" type="tns:OrdersHistoryPortType">
+		
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+
+		<!-- Order History operation binding -->
+		
+		<wsdl:operation name="OrdersHistory">
+			<soap:operation style="document" />
+			<wsdl:input>
+				<soap:body use="literal" parts="OrdersHistoryRequest" />
+				<soap:header use="literal"
+					message="tns:SessionHeaderMsg" part="Session" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" parts="OrdersHistoryResponse" />
+			</wsdl:output>
+			<wsdl:fault name="SessionError">
+				<soap:fault use="literal" name="SessionError" />
+			</wsdl:fault>
+			<wsdl:fault name="RequestError">
+				<soap:fault use="literal" name="RequestError" />
+			</wsdl:fault>
+		</wsdl:operation>
+	
+	</wsdl:binding>
+
+	<!-- ===== WSDL Web Service ===== -->
+
+<!--	
+
+	IMPORTANT:
+
+	DISABLE this part when this file is imported as part of a combined service
+	ENABLE this part (remove xsl comment marks below) if used to generate client code for a specific service
+	
+-->
+
+
+	
+	<wsdl:service name="Webservice">
+		<wsdl:port binding="tns:AuthenticationBinding" name="AuthenticationService">
+			<soap:address location="http://dgov.currenex.com/webservice/request/AuthenticationService" /> 
+			<!-- <soap:address location="https://integration2-dl.currenex.com/webservice/request/AuthenticationService" /> -->
+		</wsdl:port>
+		<wsdl:port binding="tns:OrdersHistoryBinding" name="OrdersHistoryService">
+			<soap:address location="http://dgov.currenex.com/webservice/request/OrdersHistoryService" /> 
+			<!-- <soap:address location="https://integration2-dl.currenex.com/webservice/request/OrdersHistoryService" /> -->
+		</wsdl:port>
+	</wsdl:service>
+
+
+	
+</wsdl:definitions>

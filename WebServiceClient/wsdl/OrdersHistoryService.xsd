@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<!--
+		File: OrdersHistoryService.xsd Version 1.0 (12 Apr 2010, 18:00:00)
+		Copyright: Currenex Inc. The web service and the used messages are
+		defined in the web service description file
+		[OrdersHistoryService.wsdl] that should be included with this file.
+	-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:cx="http://currenex.com/webservice/shared" xmlns:oh="http://currenex.com/webservice/orderhistory"
+	targetNamespace="http://currenex.com/webservice/orderhistory"
+	elementFormDefault="qualified">
+
+	<xs:import schemaLocation="SharedTypes.xsd"
+		namespace="http://currenex.com/webservice/shared" />
+
+	<!-- Orders History Request -->
+	<xs:element name="ordersHistoryRequest">
+		<xs:annotation>
+			<xs:documentation>The orders history request</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="dtPeriod" 				type="cx:DateTimePeriod"	nillable="false" />
+				<xs:element name="accountId" 				type="xs:string"	        minOccurs="0" maxOccurs="1"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<!-- Orders History Response -->
+	<xs:element name="ordersHistoryResponse">
+		<xs:annotation>
+			<xs:documentation>The orders history response</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:choice>
+				<xs:element name="success">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="truncated" 	type="xs:boolean" />
+							<xs:element name="orders" 		type="oh:AOrderEvent"		nillable="true" 			minOccurs="0" maxOccurs="unbounded" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="error">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="reason" 		type="xs:string" 			nillable="false" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:complexType name="AOrderEvent" abstract="true">
+		<xs:annotation>
+			<xs:documentation>
+				The base order history type for primitive and complex orders
+			</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="transTime" 					type="xs:dateTime" 			nillable="false" />
+			<xs:element name="ET" 						    type="oh:EventType" 		nillable="false" />
+			<xs:element name="reason" 						type="oh:EventReason" 		nillable="true" />
+			<xs:element name="partyID" 						type="xs:string" 		    nillable="false" />
+			<xs:element name="ordID" 						type="xs:long" 				nillable="false" />
+			<xs:element name="clOrdID" 						type="xs:string" 			nillable="true" />
+			<xs:element name="OS" 							type="oh:OrderStatus" 		nillable="false" />
+			<xs:element name="instr" 						type="oh:Instrument" 		nillable="false" />
+			<xs:element name="buySell" 						type="cx:BuySell" 			nillable="false" />
+			<xs:element name="baseSpec" 					type="xs:boolean" />
+			<xs:element name="amt" 							type="xs:decimal" 			nillable="false" />
+			<xs:element name="availAmt" 					type="xs:decimal" 			nillable="false" />
+			<xs:element name="submitDate" 					type="xs:dateTime" 			nillable="false" />
+			<xs:element name="cnclUserId" 					type="xs:string" 			nillable="true" />
+			<xs:element name="cnclDate" 					type="xs:date" 				nillable="true" />
+			<xs:element name="posId" 						type="xs:string" 			nillable="true" />
+			<xs:element name="subFund" 						type="xs:string" 			nillable="true" />
+			<xs:element name="cti" 						    type="xs:int" 			    nillable="true" />
+			<xs:element name="origin" 						type="xs:int" 			    nillable="true" />
+			<xs:element name="addTerms" 					type="xs:string" 			nillable="true" />
+			<xs:element name="exp" 							type="cx:ExpirationType" 	nillable="true" />
+			<xs:element name="minAmt" 						type="xs:decimal" 			nillable="true" />
+			<xs:element name="maxAmt" 						type="xs:decimal" 			nillable="true" />        
+			<xs:element name="trd" 							type="oh:Trade" 			nillable="true" />
+		</xs:sequence>
+	</xs:complexType>
+
+    <xs:simpleType name="EventType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="NEW" />
+			<xs:enumeration value="EXPIRED" />
+			<xs:enumeration value="CANCELLED" />
+			<xs:enumeration value="FILLED" />
+			<xs:enumeration value="REPLACED" />
+			<xs:enumeration value="TRIGGERED" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="EventReason">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="USER_CANCELED" />
+			<xs:enumeration value="USER_CANCEL_REPLACED" />
+			<xs:enumeration value="USER_LOGON" />
+			<xs:enumeration value="USER_REPLACED" />
+			<xs:enumeration value="USER_SUBMITTED" />
+			<xs:enumeration value="USER_IF" />
+			<xs:enumeration value="SYS_MARGIN_SELLOUT" />
+			<xs:enumeration value="SYS_BELOW_MIN_CANCELED" />
+			<xs:enumeration value="SYS_CREDIT_FAILED" />
+			<xs:enumeration value="SYS_MARGIN_FAILED" />
+			<xs:enumeration value="SYS_DISCONNECT_CANCELED" />
+			<xs:enumeration value="SYS_TRADING_DISABLED" />
+			<xs:enumeration value="SYS_EXECUTED" />
+			<xs:enumeration value="SYS_EXPIRED" />
+			<xs:enumeration value="SYS_IOC_CANCELED" />
+			<xs:enumeration value="SYS_OTHER" />
+			<xs:enumeration value="SYS_STARTUP" />
+			<xs:enumeration value="SYS_NO_EXEC_RELATIONSHIPS" />
+			<xs:enumeration value="SYS_RELATIONSHIP_BLACKLISTED" />
+			<xs:enumeration value="SYS_TREASURY_ROLLOVER" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+    
+	<xs:simpleType name="OrderType">
+		<xs:annotation>
+			<xs:documentation>
+				Enumeration of possible orders types supported by orders history service
+			</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="MARKET" />
+			<xs:enumeration value="LIMIT" />
+			<xs:enumeration value="ICEBERG" />
+			<xs:enumeration value="STOP" />
+			<xs:enumeration value="STOP_LIMIT" />
+			<xs:enumeration value="OCO" />
+			<xs:enumeration value="IF_DONE" />
+			<xs:enumeration value="IF_DONE_OCO" />
+			<xs:enumeration value="TRAILING_STOP" />
+			<xs:enumeration value="PEGGED" />
+			<xs:enumeration value="STAGED" />
+			<xs:enumeration value="MULTI_MARKET" />
+			<xs:enumeration value="SLICED" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="OrderStatus">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="NEW" />
+			<xs:enumeration value="PARTIAL_FILLED" />
+			<xs:enumeration value="FILLED" />
+			<xs:enumeration value="EXPIRED" />
+			<xs:enumeration value="CANCELLED" />
+			<xs:enumeration value="PARTIAL_CANCELLED" />
+			<xs:enumeration value="REJECTED" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="PegType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="BID" />
+			<xs:enumeration value="OFFER" />
+			<xs:enumeration value="MID" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="LegType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="IF" />
+			<xs:enumeration value="THEN" />
+			<xs:enumeration value="OCO1" />
+			<xs:enumeration value="OCO2" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="CcyType">
+		<xs:restriction base="xs:string">
+			<xs:length value="3" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:complexType name="Instrument" abstract="true">
+		<xs:annotation>
+			<xs:documentation>
+				The base type for instruments
+			</xs:documentation>
+		</xs:annotation>
+	</xs:complexType>
+
+	<xs:complexType name="FxInstrument">
+		<xs:complexContent>
+			<xs:extension base="oh:Instrument">
+				<xs:sequence>
+					<xs:element name="base" 						type="oh:CcyType" 				nillable="false" />
+					<xs:element name="term" 						type="oh:CcyType" 				nillable="false" />
+					<xs:element name="tenor" 						type="cx:Tenor" 				nillable="false" />
+					<xs:element name="farTenor" 					type="cx:Tenor" 				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="TreasInstrument">
+		<xs:complexContent>
+			<xs:extension base="oh:Instrument">
+				<xs:sequence>
+					<xs:element name="treasState" 					type="cx:TreasuryState"			nillable="false" />
+					<xs:element name="tenor" 						type="cx:TreasuryTenorCode"		nillable="false" />
+					<xs:element name="treasAnounc" 					type="oh:TreasAnnounc"			nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="TreasInstrDef">
+		<xs:sequence>
+			<xs:element name="tenor" 								type="cx:TreasuryTenorCode"		nillable="false" />
+			<xs:element name="cusip" 								type="xs:string" 				nillable="false" />
+			<xs:element name="datedDate" 							type="xs:date" 					nillable="true" />
+			<xs:element name="maturityDate" 						type="xs:date" 					nillable="true" />
+			<xs:element name="intrstPayDate1" 						type="xs:date" 					nillable="true" />
+			<xs:element name="intrstPayDate2" 						type="xs:date" 					nillable="true" />
+			<xs:element name="cupon" 								type="xs:decimal" 				nillable="true" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="TreasAnnounc">
+		<xs:sequence>
+			<xs:element name="definition" 							type="oh:TreasInstrDef"			nillable="false" />
+			<xs:element name="overrideTenor" 						type="cx:TreasuryTenorCode"		nillable="true" />
+			<xs:element name="nonStdTenorDesc" 						type="xs:string"				nillable="true" />
+			<xs:element name="announcDate" 							type="xs:date" 					nillable="false" />
+			<xs:element name="auctDate" 							type="xs:date" 					nillable="false" />
+			<xs:element name="issueDate" 							type="xs:date" 					nillable="false" />
+			<xs:element name="reopen" 								type="xs:boolean" />
+		</xs:sequence>
+	</xs:complexType>
+
+    <xs:complexType name="IrsInstrument">
+		<xs:complexContent>
+			<xs:extension base="oh:Instrument">
+				<xs:sequence>
+					<xs:element name="tenor" 					    type="cx:IrsTenor"			    nillable="true" />
+					<xs:element name="cme" 						    type="cx:IrsCme"		        nillable="true" />
+					<xs:element name="ccy" 					        type="oh:CcyType"			    nillable="false" />
+					<xs:element name="definition" 					type="cx:IrsInstrDef"			nillable="false" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:simpleType name="PositionType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="OPENING" />
+			<xs:enumeration value="CLOSING" />
+			<xs:enumeration value="CLOSE_OPEN" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:complexType name="Trade">
+		<xs:sequence>
+			<xs:element name="id" 									type="xs:string" 				nillable="false" />
+			<xs:element name="p1Id" 								type="xs:string" 				nillable="true" />
+			<xs:element name="p2Id" 								type="xs:string" 				nillable="true" />
+			<xs:element name="tradeDate" 							type="xs:date" 					nillable="true" />
+			<xs:element name="tradeTime" 							type="xs:dateTime" 				nillable="true" />
+			<xs:element name="valDate" 								type="xs:date" 					nillable="true" />
+			<xs:element name="farValDate" 							type="xs:date" 					nillable="true" />
+			<xs:element name="amt" 									type="xs:decimal" 				nillable="false" />
+			<xs:element name="rate" 								type="xs:decimal" 				nillable="false" />
+			<xs:element name="pts" 									type="xs:decimal" 				nillable="true" />
+			<xs:element name="posType" 								type="oh:PositionType"			nillable="true" />
+			<xs:element name="ag" 									type="xs:boolean" />
+		</xs:sequence>
+	</xs:complexType>
+
+    <!-- All primitive and complex type orders are defined a below, following the same order defined in OrderType -->
+    
+    <!-- Market order event -->
+	<xs:complexType name="MarketOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent" />
+		</xs:complexContent>
+	</xs:complexType>
+
+    <!-- Limit order event -->
+	<xs:complexType name="LimitOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent">
+				<xs:sequence>
+					<xs:element name="rate" 						type="xs:decimal" 				nillable="false" />
+					<xs:element name="pts" 							type="xs:decimal" 				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<!-- Iceberg order event -->
+	<xs:complexType name="IcebergOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent">
+				<xs:sequence>
+					<xs:element name="rate" 						type="xs:decimal" 				nillable="false" />
+					<xs:element name="pts" 							type="xs:decimal" 				nillable="true" />
+					<xs:element name="show" 						type="xs:decimal" 				nillable="false" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<!-- Stop order event -->
+	<xs:complexType name="StopOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent">
+				<xs:sequence>
+					<xs:element name="stopRate" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="priceSide" 					type="cx:PriceSideType"			nillable="false" />
+					<xs:element name="trigRate" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="trigDate" 					type="xs:date" 					nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<!-- Stop Limit order event -->
+	<xs:complexType name="StopLimitOE">
+		<xs:complexContent>
+			<xs:extension base="oh:StopOE">
+				<xs:sequence>
+					<xs:element name="limitRate" 					type="xs:decimal" 				nillable="false" />
+					<xs:element name="limitPts" 					type="xs:decimal" 				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+    <!-- OCO order event -->
+    <xs:complexType name="OcoOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent">
+				<xs:sequence>
+					<xs:element name="l1LimitRate" 					type="xs:decimal"				nillable="false" />
+					<xs:element name="l2OT" 						type="oh:OrderType" 			nillable="false" />
+					<xs:element name="l2LimitRate" 					type="xs:decimal"				nillable="true" />
+					<xs:element name="l2StopRate" 					type="xs:decimal"				nillable="false" />
+					<xs:element name="l2StopSide" 					type="cx:PriceSideType"			nillable="false" />
+					<xs:element name="l2BuySell" 					type="cx:BuySell" 				nillable="false" />
+					<xs:element name="limitPts" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="trigRate" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="trigDate" 					type="xs:date" 					nillable="true" />
+					<xs:element name="leg" 						    type="oh:LegType"               nillable="true" />
+					<xs:element name="l2AvailAmt" 					type="xs:decimal"				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<!-- AIfDone order event -->
+	<!-- IfDone order event -->
+	<xs:complexType name="AIfDoneOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent">
+				<xs:sequence>
+					<xs:element name="l1OT" 						type="oh:OrderType" 			nillable="false" />
+					<xs:element name="l1LimitRate" 					type="xs:decimal"				nillable="true" />
+					<xs:element name="l1StopRate" 					type="xs:decimal"				nillable="true" />
+					<xs:element name="l1StopSide" 					type="cx:PriceSideType"			nillable="true" />
+					<xs:element name="trigRate" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="trigDate" 					type="xs:date" 					nillable="true" />
+					<xs:element name="limitPts" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="leg" 						    type="oh:LegType"               nillable="true"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<!-- IfDone order event -->
+	<xs:complexType name="IfDoneOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AIfDoneOE">
+				<xs:sequence>
+					<xs:element name="l2OT" 						type="oh:OrderType" 			nillable="false" />
+					<xs:element name="l2BuySell" 					type="cx:BuySell" 				nillable="false" />
+					<xs:element name="l2LimitRate" 					type="xs:decimal"				nillable="true" />
+					<xs:element name="l2StopRate" 					type="xs:decimal"				nillable="true" />
+					<xs:element name="l2StopSide" 					type="cx:PriceSideType"			nillable="true" />
+					<xs:element name="l2AvailAmt" 					type="xs:decimal"				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+    <!-- IfDoneOCO order event -->
+	<xs:complexType name="IfDoneOcoOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AIfDoneOE">
+				<xs:sequence>
+				    <xs:element name="ocoL1BuySell" 				type="cx:BuySell"				nillable="false" />
+				    <xs:element name="ocoL1LimitRate" 				type="xs:decimal"				nillable="true" />
+				    <xs:element name="ocoL1AvailAmt" 				type="xs:decimal"				nillable="true" />
+				    <xs:element name="ocoL2OT" 						type="oh:OrderType" 			nillable="false" />
+					<xs:element name="ocoL2BuySell" 				type="cx:BuySell" 				nillable="false" />
+					<xs:element name="ocoL2LimitRate" 				type="xs:decimal"				nillable="true" />
+					<xs:element name="ocoL2StopRate" 				type="xs:decimal"				nillable="true" />
+					<xs:element name="ocoL2StopSide" 				type="cx:PriceSideType"			nillable="true" />
+					<xs:element name="ocoL2AvailAmt" 				type="xs:decimal"				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+    <!-- Trailing Stop order event -->
+    <xs:complexType name="TrailingStopOE">
+		<xs:complexContent>
+			<xs:extension base="oh:StopOE">
+				<xs:sequence>
+					<xs:element name="limitRate" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="trailBy" 						type="xs:decimal" 				nillable="true" />
+					<xs:element name="slippage" 					type="xs:int" />
+					<xs:element name="initStopRate" 				type="xs:decimal"				nillable="true" />
+					<xs:element name="offsetPips" 					type="xs:decimal"				nillable="true" />
+					<xs:element name="limitPts" 					type="xs:decimal" 				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<!-- Pegged order event -->
+	<xs:complexType name="PeggedOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent">
+				<xs:sequence>
+					<xs:element name="showAmt" 						type="xs:decimal" 				nillable="true" />
+					<xs:element name="peg" 							type="oh:PegType" 				nillable="false" />
+					<xs:element name="offsetPips" 					type="xs:int" 					nillable="false" />
+					<xs:element name="discretPips" 					type="xs:int" 					nillable="false" />
+					<xs:element name="protecPct" 					type="xs:decimal" 				nillable="false" />
+					<xs:element name="worstRate" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="fallback" 					type="xs:boolean" />
+					<xs:element name="trigRate" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="trigDate" 					type="xs:date" 					nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<!-- Staged order event -->
+	<xs:complexType name="StagedOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent">
+				<xs:sequence>
+					<xs:element name="worstRate" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="vwapRate" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="traderId" 					type="xs:string" 				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+    <!-- MultiMarket order event -->
+    <xs:complexType name="MultiMarketOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent">
+				<xs:sequence>
+					<xs:element name="rate" 						type="xs:decimal" 				nillable="true" />
+					<xs:element name="pts" 							type="xs:decimal" 				nillable="true" />
+					<xs:element name="sendToCx" 					type="xs:boolean" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<!-- Sliced order event -->
+	<xs:complexType name="SlicedOE">
+		<xs:complexContent>
+			<xs:extension base="oh:AOrderEvent">
+				<xs:sequence>
+					<xs:element name="slices" 						type="xs:int" />
+					<xs:element name="avgIntvlLen" 					type="xs:long" 					nillable="true" />
+					<xs:element name="intvlOffset" 					type="xs:decimal"				nillable="true" />
+					<xs:element name="sliceAmt" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="limitRate" 					type="xs:decimal" 				nillable="false" />
+					<xs:element name="maxTobPct" 					type="xs:decimal" 				nillable="true" />
+					<xs:element name="limitPts" 					type="xs:decimal" 				nillable="true" />
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+</xs:schema>

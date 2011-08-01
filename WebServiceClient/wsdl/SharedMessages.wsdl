@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+	File: SharedMessages.wsdl
+	Version 2.1 (21 Apr 2008, 18:00:00)
+	Copyright: Currenex Inc.
+	
+	This file contains the shared messages used by different web services.
+	
+	The data types used in the SOAP messages are defined in an additional file
+	[SharedTypes.xsd] that should be included with this file.
+-->
+<wsdl:definitions 
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+	xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" 
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:cx="http://currenex.com/webservice/shared" 
+	xmlns:tns="http://currenex.com/webservice/definitions" 
+	targetNamespace="http://currenex.com/webservice/definitions">
+
+	
+	<!-- ===== XML Schema Import for types ===== -->
+	
+	<!-- Webservice messages and types (inluce schema into its target namespace) -->
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://currenex.com/webservice/shared">
+			<xsd:include schemaLocation="SharedTypes.xsd"/>
+		</xsd:schema>
+	</wsdl:types>
+
+	<!-- ===== Shared WSDL Messages ===== -->
+	
+		
+	<!-- Session Header Message (used inside other messages) -->
+	
+	<wsdl:message name="SessionHeaderMsg">
+		<wsdl:documentation>
+			Session header. This is not used as a message but included in other
+			messages to submit session authentication information.
+		</wsdl:documentation>
+		<wsdl:part name="Session" element="cx:session"/>
+	</wsdl:message>
+	
+	<!-- Authorisation requests -->
+	
+	<wsdl:message name="LoginRequestMsg">
+		<wsdl:documentation>
+				Get session request. Attempts to log in with the given credentials and to obtain a running Currenex
+				session. Fails if user has no open session. If you want to start a new session, use CreateSessionRequest 
+				instead.
+			</wsdl:documentation>
+		<wsdl:part name="LoginRequest" element="cx:loginRequest"/>
+	</wsdl:message>
+	<wsdl:message name="LoginResponseMsg">
+		<wsdl:documentation>
+				Authentication response for successful authentication. Contains session information.
+				If the authentication has failed, the service responds with a fault specifying the error reason.
+			</wsdl:documentation>
+		<wsdl:part name="LoginResponse" element="cx:loginResponse"/>
+	</wsdl:message>
+	<wsdl:message name="AuthErrorMsg">
+		<wsdl:documentation>
+				Authentication error. This is returned as a fault when the authentication has failed.
+			</wsdl:documentation>
+		<wsdl:part name="AuthError" element="cx:authError"/>
+	</wsdl:message>
+	
+	<wsdl:message name="LogoutRequestMsg">
+		<wsdl:documentation>
+				Log out from session created through CreateSessionRequest.
+			</wsdl:documentation>
+		<wsdl:part name="LogoutRequest" element="cx:logoutRequest"/>
+	</wsdl:message>
+	<wsdl:message name="LogoutResponseMsg">
+		<wsdl:part name="LogoutResponse" element="cx:logoutResponse"/>
+	</wsdl:message>
+	
+	<wsdl:message name="ChangePasswordRequestMsg">
+		<wsdl:part name="ChangePasswordRequest" element="cx:changePasswordRequest"/>
+	</wsdl:message>
+	<wsdl:message name="ChangePasswordResponseMsg">
+		<wsdl:part name="ChangePasswordResponse" element="cx:changePasswordResponse"/>
+	</wsdl:message>
+	<wsdl:message name="ChangePasswordErrorMsg">
+		<wsdl:part name="ChangePasswordError" element="cx:changePasswordError"/>
+	</wsdl:message>
+	
+	<!-- session test -->
+	
+	<wsdl:message name="TestDataRequestMsg">
+		<wsdl:part name="TestRequest" element="cx:testRequest"/>
+	</wsdl:message>
+	<wsdl:message name="TestDataResponseMsg">
+		<wsdl:part name="TestResponse" element="cx:testResponse"/>
+	</wsdl:message>
+	<wsdl:message name="TestErrorMsg">
+		<wsdl:part name="TestError" element="cx:testError"/>
+	</wsdl:message>
+
+	
+	<!-- General errors -->
+	
+	<wsdl:message name="SessionErrorMsg">
+		<wsdl:documentation>
+			Session error. This is returned as a fault when the session ticket authentication has failed.
+		</wsdl:documentation>
+		<wsdl:part name="SessionError" element="cx:sessionError"/>
+	</wsdl:message>
+
+	<wsdl:message name="RequestErrorMsg">
+		<wsdl:documentation>
+			Request error. This is returned as a fault when the submitted request is invalid, 
+			or if there's a general server side problem.
+		</wsdl:documentation>
+		<wsdl:part name="RequestError" element="cx:requestError"/>
+	</wsdl:message>
+	
+	
+	
+	<!-- ===== WSDL Port Types ===== -->
+	
+	<wsdl:portType name="AuthenticationPortType">
+		
+		<!-- Authentication service operations -->
+		
+		<wsdl:operation name="Login">
+			<wsdl:input message="tns:LoginRequestMsg"/>
+			<wsdl:output message="tns:LoginResponseMsg"/>
+			<wsdl:fault name="AuthError" message="tns:AuthErrorMsg"/>
+		</wsdl:operation>
+		
+		<wsdl:operation name="Logout">
+			<wsdl:input message="tns:LogoutRequestMsg"/>
+			<wsdl:output message="tns:LogoutResponseMsg"/>
+			<wsdl:fault name="SessionError" message="tns:SessionErrorMsg"/>
+		</wsdl:operation>
+		
+		<wsdl:operation name="ChangePassword">
+			<wsdl:input message="tns:ChangePasswordRequestMsg"/>
+			<wsdl:output message="tns:ChangePasswordResponseMsg"/>
+			<wsdl:fault name="AuthError" message="tns:AuthErrorMsg"/>
+			<wsdl:fault name="ChangePasswordError" message="tns:ChangePasswordErrorMsg"/>
+			<wsdl:fault name="RequestError" message="tns:RequestErrorMsg"/>
+		</wsdl:operation>
+		
+		<wsdl:operation name="TestRequest">
+			<wsdl:input message="tns:TestDataRequestMsg"/>
+			<wsdl:output message="tns:TestDataResponseMsg"/>
+			<wsdl:fault name="SessionError" message="tns:SessionErrorMsg"/>
+			<wsdl:fault name="RequestError" message="tns:RequestErrorMsg"/>
+			<wsdl:fault name="TestError" message="tns:TestErrorMsg"/>
+		</wsdl:operation>
+
+	</wsdl:portType>	
+	
+	<!-- ===== WSDL SOAP Bindings ===== -->
+	<wsdl:binding name="AuthenticationBinding" type="tns:AuthenticationPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		
+		<!-- Authentication service bindings -->
+		
+		<wsdl:operation name="Login">
+			<soap:operation style="document" />
+			<wsdl:input>
+				<soap:body use="literal" parts="LoginRequest" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" parts="LoginResponse" />
+			</wsdl:output>
+			<wsdl:fault name="AuthError">
+				<soap:fault use="literal" name="AuthError" />
+			</wsdl:fault>
+		</wsdl:operation>
+		
+		<wsdl:operation name="Logout">
+			<soap:operation style="document" />
+			<wsdl:input>
+				<soap:body use="literal" parts="LogoutRequest" />
+                <soap:header use="literal" message="tns:SessionHeaderMsg" part="Session" />
+            </wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" parts="LogoutResponse" />
+			</wsdl:output>
+			<wsdl:fault name="SessionError">
+				<soap:fault use="literal" name="SessionError" />
+			</wsdl:fault>
+		</wsdl:operation>
+
+        <wsdl:operation name="ChangePassword">
+			<soap:operation style="document" />
+			<wsdl:input>
+				<soap:body use="literal" parts="ChangePasswordRequest" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" parts="ChangePasswordResponse" />
+			</wsdl:output>
+			<wsdl:fault name="AuthError">
+				<soap:fault use="literal" name="AuthError" />
+			</wsdl:fault>
+			<wsdl:fault name="ChangePasswordError">
+				<soap:fault use="literal" name="ChangePasswordError" />
+			</wsdl:fault>
+			<wsdl:fault name="RequestError">
+				<soap:fault use="literal" name="RequestError" />
+			</wsdl:fault>
+		</wsdl:operation>
+		
+		<!-- Test request -->
+		
+		<wsdl:operation name="TestRequest">
+			<soap:operation style="document" />
+			<wsdl:input>
+				<soap:body use="literal" parts="TestRequest" />
+				<soap:header use="literal"
+					message="tns:SessionHeaderMsg" part="Session" />
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal" parts="TestResponse" />
+			</wsdl:output>
+			<wsdl:fault name="SessionError">
+				<soap:fault use="literal" name="SessionError" />
+			</wsdl:fault>
+			<wsdl:fault name="RequestError">
+				<soap:fault use="literal" name="RequestError" />
+			</wsdl:fault>
+			<wsdl:fault name="TestError">
+				<soap:fault use="literal" name="TestError" />
+			</wsdl:fault>
+		</wsdl:operation>
+		
+		
+	</wsdl:binding>
+	
+		<!-- ===== WSDL Web Service ===== -->
+<!--	
+
+	IMPORTANT:
+
+	DISABLE this part when this file is imported as part of a combined service
+	ENABLE this part (remove xsl comment marks below) if used to generate client code for a specific service
+	
+-->
+
+<!--
+	
+	<wsdl:service name="Webservice">
+		<wsdl:port binding="tns:AuthenticationBinding" name="AuthenticationService">
+			<soap:address location="https://integration2-dl.currenex.com/webservice/request/AuthenticationService" />
+		</wsdl:port>
+		<wsdl:port binding="tns:AuthenticationBinding" name="AuthenticationService">
+			<soap:address location="https://integration2-dl.currenex.com/webservice/request/AuthenticationService" />
+		</wsdl:port>
+	</wsdl:service>
+-->
+
+	
+</wsdl:definitions>

@@ -1,0 +1,17 @@
+Eris Order History Service
+-------------------------------------------------
+
+Suite of applications that allow us to access  orders interactively.
+
+Dependencies
+---------------------------------------------------
+jruby-1.6.1
+jdk 6
+
+GEMS
+bundler
+
+
+Testing
+---------------------------------------------------
+run script/test
